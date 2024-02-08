@@ -1,0 +1,149 @@
+version: '3'
+
+services:
+
+  i-dair-codex-database:
+    image: idairtech/i-dair-codex-database:latest
+    container_name: i-dair-codex-database
+    restart: always
+    env_file:
+      - config.env
+    ports:
+      - "3306:3306"
+    volumes:
+      - databasericodexmysql:/var/lib/mysql
+      - dbicodexmysql:/docker-entrypoint-initdb.d
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    env_file:
+      - config.env
+    restart: always
+    ports:
+      - "8088:80"
+    depends_on:
+      - i-dair-codex-database
+
+  mlflowserver:
+    image: idairtech/i-dair-codex-ai-core:latest
+    container_name: mlflowserver
+    restart: always 
+    env_file:
+      - config.env
+    ports:
+      - "5000:5000"
+    depends_on:
+      - i-dair-codex-database
+    volumes:
+      - ./mlruns:/usr/src/app/mlruns
+      - ricodexaicore:/usr/src/app
+      - ./dataset:/usr/src/dataset
+    command: mlflow server --backend-store-uri mysql://root:root@i-dair-codex-database:3306/mlflowdb --default-artifact-root /usr/src/app/mlruns --host 0.0.0.0 -p 5000
+
+  i-dair-codex-ai-core:
+    image: idairtech/i-dair-codex-ai-core:latest
+    container_name: i-dair-codex-ai-core
+    restart: always
+    env_file:
+      - config.env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - i-dair-codex-ai-celery
+      - i-dair-codex-database
+      - mlflowserver
+      - rabbitmq
+      - memcached
+    extra_hosts:
+      - "host.docker.internal:host-gateway"    
+    network_mode: host
+    volumes:
+      - ./mlruns:/usr/src/app/mlruns
+      - ricodexaicore:/usr/src/app
+      - ./dataset:/usr/src/dataset
+      - ./logs:/usr/src/app/log
+    command: bash -c "python manage.py migrate django_celery_results && python manage.py runserver 0.0.0.0:8000"
+
+  i-dair-codex-ai-celery:
+    image:  idairtech/i-dair-codex-ai-core:latest
+    container_name: i-dair-codex-ai-celery
+    restart: always
+    env_file:
+      - config.env
+    depends_on:
+      - i-dair-codex-database
+      - mlflowserver
+      - rabbitmq
+      - memcached
+    extra_hosts:
+      - "host.docker.internal:host-gateway"    
+    network_mode: host
+    volumes:
+      - ./mlruns:/usr/src/app/mlruns
+      - ricodexaicore:/usr/src/app
+      - ./dataset:/usr/src/dataset
+      - ./logs:/usr/src/app/log
+    command: celery -A ri_codex_ai_core worker --loglevel=info -P prefork -c 12
+
+  i-dair-codex-backend:
+    image: idairtech/i-dair-codex-backend:latest
+    container_name: i-dair-codex-backend
+    restart: always
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - i-dair-codex-database
+    network_mode: host
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318/v1/traces 
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=i-dair-codex-backend
+    env_file:
+      - config.env
+    volumes:
+      - ./dataset:/usr/dataset
+      - ./logs:/usr/log
+    ports:
+      - "3004:3004"
+
+  rabbitmq:
+    image: 'rabbitmq:3.7.18-management'
+    container_name: rabbit
+    restart: always
+    env_file:
+      - config.env
+    depends_on:
+      - i-dair-codex-database  
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+
+  memcached:
+    container_name: memcached
+    image: memcached:latest
+    restart: always
+    ports:
+      - "11211:11211"
+    command: ["-m", "4096"]
+    depends_on:
+      - i-dair-codex-database
+
+  i-dair-codex-frontend:
+    image:  idairtech/i-dair-codex-frontend:latest
+    container_name: i-dair-codex-frontend
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    network_mode: host
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+
+volumes:
+  databasericodexmysql:
+  dbicodexmysql:
+  ricodexaicore:
+  rabbit-data:
