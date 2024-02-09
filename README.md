@@ -11,18 +11,17 @@ trying to run the application.
 ## Known issues
 
 1) The sample docker compose exposes services on several ports that might conflict with existing ports 
-already occupied by other processes. If this is the case, please make sure to either stop any process 
-that use conflicting ports or modify the ports in the docker-compose.yml as well as the nginx/conf.d/default.conf .
-Also, shouldn't be using the host network mode for several containers.
+already occupied by other processes, to fix this you can  
+   1) Either stop any process that use conflicting ports (e.g. sudo service [mysql|memcached|rabbitmq-server] stop )
+   2) Or modify ports in both the docker-compose.yml and nginx/conf.d/default.conf
 
 2) On first startup there is a race condition related to the database creation and the application will not work. 
-Therefore, for the first time you will need to start, then stop and then start again.
+Therefore, for the first time you will need to start, wait a bit, then stop and then start again.
 
 3) Since the sample docker compose doesn't provide the Signoz container you will see errors regarding tracing
 in the logs. These can be safely ignored.
 
-4) File permissions haven't been properly considered across the components and hence the runtime directories 
-are using 777.
+4) XGboost didn't work anymore when testing this setup
 
 
 ## Start the application

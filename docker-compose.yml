@@ -36,9 +36,9 @@ services:
     depends_on:
       - i-dair-codex-database
     volumes:
-      - ./mlruns:/usr/src/app/mlruns
+      - mlruns:/usr/src/app/mlruns
       - ricodexaicore:/usr/src/app
-      - ./dataset:/usr/src/dataset
+      - dataset:/usr/src/dataset
     command: mlflow server --backend-store-uri mysql://root:root@i-dair-codex-database:3306/mlflowdb --default-artifact-root /usr/src/app/mlruns --host 0.0.0.0 -p 5000
 
   i-dair-codex-ai-core:
@@ -59,10 +59,10 @@ services:
       - "host.docker.internal:host-gateway"    
     network_mode: host
     volumes:
-      - ./mlruns:/usr/src/app/mlruns
+      - mlruns:/usr/src/app/mlruns
       - ricodexaicore:/usr/src/app
-      - ./dataset:/usr/src/dataset
-      - ./logs:/usr/src/app/log
+      - dataset:/usr/src/dataset
+      - logs:/usr/src/app/log
     command: bash -c "python manage.py migrate django_celery_results && python manage.py runserver 0.0.0.0:8000"
 
   i-dair-codex-ai-celery:
@@ -80,10 +80,10 @@ services:
       - "host.docker.internal:host-gateway"    
     network_mode: host
     volumes:
-      - ./mlruns:/usr/src/app/mlruns
+      - mlruns:/usr/src/app/mlruns
       - ricodexaicore:/usr/src/app
-      - ./dataset:/usr/src/dataset
-      - ./logs:/usr/src/app/log
+      - dataset:/usr/src/dataset
+      - logs:/usr/src/app/log
     command: celery -A ri_codex_ai_core worker --loglevel=info -P prefork -c 12
 
   i-dair-codex-backend:
@@ -101,8 +101,8 @@ services:
     env_file:
       - config.env
     volumes:
-      - ./dataset:/usr/dataset
-      - ./logs:/usr/log
+      - dataset:/usr/dataset
+      - logs:/usr/log
     ports:
       - "3004:3004"
 
@@ -147,3 +147,6 @@ volumes:
   dbicodexmysql:
   ricodexaicore:
   rabbit-data:
+  mlruns:
+  dataset:
+  logs:
