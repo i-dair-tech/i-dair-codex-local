@@ -66,13 +66,7 @@ For docker resources you can run docker compose down with the --volumes flags by
 $ ./stop.sh -c 
 ```
 
-Additionally, you may want to remove the created directories like mlruns, dataset and logs yourself
-
-```
-$ rm -rf mlruns dataset logs
-```
-
-Finally, you can always revert to cleaning up containers, images and volumes using
+If the above fails you can always revert to cleaning up containers, images and volumes using
 the respective docker commands. Please refer to the online documention: 
 https://docs.docker.com/reference/
 
