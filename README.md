@@ -44,7 +44,9 @@ $ ./tail-logs.sh
 Go to http://localhost
 
 You can also directly log into
+
 MLFlow: http://localhost:5000
+
 PhpMyAdmin:  http://localhost:8088
 
 ## Stop the application
